@@ -218,6 +218,120 @@ atualiza_fun() {
     fi
     exit 1
 }
+lacasita(){
+unset puertos
+        declare -A port
+        local portasVAR=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND" | grep "LISTEN")
+        #local portasVAR=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND" | grep "LISTEN" | grep -v 'systemd-resolve')
+        local NOREPEAT
+        local reQ
+        local Port
+        while read port; do
+                reQ=$(echo ${port}|awk '{print $1}')
+                Port=$(echo ${port} | awk '{print $9}' | awk -F ":" '{print $2}')
+                [[ $(echo -e $NOREPEAT|grep -w "$Port") ]] && continue
+                NOREPEAT+="$Port\n"
+                case ${reQ} in
+                        squid|squid3)
+                        [[ -z ${port[SQD]} ]] && local port[SQD]="\033[1;31m SQUID: \033[1;32m"
+                        port[SQD]+="$Port ";;
+                        systemd-r|systemd-re|systemd-resolv)
+                        [[ -z ${port[md]} ]] && local port[md]="\033[1;31m SYSTEMD: \033[1;32m"
+                        port[md]+="$Port ";;
+                        apache|apache2)
+                        [[ -z ${port[APC]} ]] && local port[APC]="\033[1;31m APACHE: \033[1;32m"
+                        port[APC]+="$Port ";;
+                        nginx)
+                        [[ -z ${port[NG]} ]] && local port[NG]="\033[1;31m NGINX: \033[1;32m"
+                        port[NG]+="$Port ";;
+                        ssh|sshd)
+                        [[ -z ${port[SSH]} ]] && local port[SSH]="\033[1;31m SSH: \033[1;32m"
+                        port[SSH]+="$Port ";;
+                        dropbear)
+                        [[ -z ${port[DPB]} ]] && local port[DPB]="\033[1;31m DROPBEAR: \033[1;32m"
+                        port[DPB]+="$Port ";;
+                        ssserver|ss-server)
+                        [[ -z ${port[SSV]} ]] && local port[SSV]="\033[1;31m SHADOWSOCKS: \033[1;32m"
+                        port[SSV]+="$Port ";;
+                        obfs-serv)
+                        [[ -z ${port[OB]} ]] && local port[OB]="\033[1;31m OBFS: \033[1;32m"
+                        port[OB]+="$Port ";;
+                        trojan-go)
+                        [[ -z ${port[GO]} ]] && local port[GO]="\033[1;31m TROJAN GO: \033[1;32m"
+                        port[GO]+="$Port ";;
+                        trojan)
+                        [[ -z ${port[tro]} ]] && local port[tro]="\033[1;31m TROJAN: \033[1;32m"
+                        port[tro]+="$Port ";;
+                        openvpn)
+                        [[ -z ${port[OVPN]} ]] && local port[OVPN]="\033[1;31m OPENVPN-TCP: \033[1;32m"
+                        port[OVPN]+="$Port ";;
+                        stunnel4|stunnel)
+                        [[ -z ${port[SSL]} ]] && local port[SSL]="\033[1;31m SSL: \033[1;32m"
+                        port[SSL]+="$Port ";;
+                        stunnel5)
+                        [[ -z ${port[SSL5]} ]] && local port[SSL5]="\033[1;31m STUNNEL5: \033[1;32m"
+                        port[SSL5]+="$Port ";;
+                        python|python3)
+                        [[ -z ${port[PY3]} ]] && local port[PY3]="\033[1;31m PYTHON: \033[1;32m"
+                        port[PY3]+="$Port ";;
+                        node)
+                        [[ -z ${port[WS]} ]] && local port[WS]="\033[1;31m WEBSOCKET: \033[1;32m"
+                        port[WS]+="$Port ";;
+                        v2ray)
+                        [[ -z ${port[V2R]} ]] && local port[V2R]="\033[1;31m V2RAY: \033[1;32m"
+                        port[V2R]+="$Port ";;
+                        badvpn-ud)
+                        [[ -z ${port[BAD]} ]] && local port[BAD]="\033[1;31m BADVPN: \033[1;32m"
+                        port[BAD]+="$Port ";;
+
+                esac
+        done <<< "${portasVAR}"
+
+        #UDP
+        local portasVAR=$(lsof -V -i udp -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND")
+        local NOREPEAT
+        local reQ
+        local Port
+        while read port; do
+                reQ=$(echo ${port}|awk '{print $1}')
+                Port=$(echo ${port} | awk '{print $9}' | awk -F ":" '{print $2}')
+                [[ $(echo -e $NOREPEAT|grep -w "$Port") ]] && continue
+                NOREPEAT+="$Port\n"
+                case ${reQ} in
+                        openvpn)
+                        [[ -z ${port[OVPN]} ]] && local port[OVPN]="\033[1;31m OPENVPN-UDP: \033[1;32m"
+                        port[OVPN]+="$Port ";;
+                        dns-serve)
+                        [[ -z ${port[SLOW]} ]] && local port[SLOW]="\033[1;31m SlowDNS: \033[1;32m"
+                        port[SLOW]+="$Port ";;
+                        #stunnel5)
+                        #[[ -z ${port[SSL]} ]] && local port[SSL]="\033[1;31m SSL: \033[1;32m"
+                        #port[SSL]+="$Port ";;
+                esac
+        done <<< "${portasVAR}"
+[[ $(dpkg --get-selections|grep -w 'wireguard'|head -1) ]] && {
+                if [[ ! $(wg|grep -w 'interface') = "" ]]; then
+                        wg=$(wg|grep -w 'port'|awk -F ' ' '{print $3}')
+                        port[wg]="\033[1;31m WIREGUARD:\033[1;32m $wg"
+                fi
+        }
+        k=1
+
+        for line in "${port[@]}"; do
+                [[ -z "$line" ]] && continue
+                let RESTO=k%2
+
+                if [[ $RESTO -eq 0 ]]; then
+                        puertos+="$line\n"
+                else
+                        puertos+="$line-"
+                fi
+                let k++
+
+        done
+
+        echo -e "$puertos"|column -t -s '-'
+}
 funcao_idioma() {
     tput cuu1 && tput dl1
     msg -bar2
@@ -417,7 +531,7 @@ os_system() {
     system=$(echo $(cat -n /etc/issue | grep 1 | cut -d' ' -f6,7,8 | sed 's/1//' | sed 's/      //'))
     echo $system | awk '{print $1, $2}'
 }
-lacasita() {
+lcasita() {
     unset puertos
     declare -A port
     local portasVAR=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" | grep -v "COMMAND" | grep "LISTEN")
@@ -614,7 +728,107 @@ systen_info() {
 } || {
     autram="\e[1;31m[OFF]"
 }
-menu3() {
+menu3(){
+declare -A inst
+pidr_inst
+clear
+valuest=$(ps ax |grep /etc/shadowsocks-r|grep -v grep)
+[[ $valuest != "" ]] && valuest="\033[1;32m[ON] " || valuest="\033[1;31m[OFF]"
+pidproxy=$(ps x | grep -w  "lacasitamx.py" | grep -v "grep" | awk -F "pts" '{print $1}') && [[ ! -z $pidproxy ]] && plox="\e[1;32m[ON] " || plox="\e[1;31m[OFF]"
+Bot=$(ps x|grep -v grep |grep "ADMbot.sh")
+[[ ! $Bot ]] && AD="\033[1;31m[OFF]" || AD="\033[1;32m[ON] "
+#[[ $(ps x | grep stunnel5 | grep -v grep | awk '{print $1}') ]] && stunel5="\e[1;32m[ON]" || stunel5="\e[1;31m[OFF]"
+#msg -bar
+msg -tit
+export -f fun_eth
+export -f fun_bar
+#echo -e "\e[1;37mTotal Ram: ${null}$(($totalram / 1024)) \e[1;37mUSO: ${null}$(($usedram / 1024)) \e[1;37mLIBRE: ${null}$(($freeram / 1024)) \e[37mSwap:${null}$(($swapram / 1024))MB"
+export -f lacasita
+lacasita
+        msg -bar
+echo -e "       \e[97m\e[1;100mPROTOCOLOS\e[0m                    \e[97m\e[41mHERRAMIENTAS\e[0m"
+msg -bar
+ if [[ ! -e /etc/noty ]]; then
+ noty="\e[1;91m[OFF]"
+ else
+ noty="\e[1;92m[ON] "
+ fi
+ onap=$(ps x|grep -v grep |grep ".onapp")
+[[ ! $onap ]] && app="\033[1;31m[OFF]" || app="\033[1;32m[ON] "
+ if [[ $(systemctl is-active chekuser) = "active" ]]; then
+ chek="\e[1;92m[ON] "
+ else
+ chek="\e[1;91m[OFF]"
+ fi
+#menu de protocolos
+echo -e "\e[1;93m[\e[92m1\e[93m]$(msg -verm2 "➛ ")$(msg -azu "BADVPN        ${inst[badvpn]}")  \e[1;93m[\e[92m15\e[93m]$(msg -verm2 "➛ ")$(msg -azu "ARCHIVO ONLINE")"
+echo -e "\e[1;93m[\e[92m2\e[93m]$(msg -verm2 "➛ ")$(msg -azu "SOCKS LIBEV   ${inst[ss-server]}")  \e[1;93m[\e[92m16\e[93m]$(msg -verm2 "➛ ")$(msg -azu "FIREWALL")"
+echo -e "\e[1;93m[\e[92m3\e[93m]$(msg -verm2 "➛ ")$(msg -azu "SOCKS PYTHON  ${inst[python]}")  \e[1;93m[\e[92m17\e[93m]$(msg -verm2 "➛ ")$(msg -azu "FAIL2BAN PROTECION")"
+echo -e "\e[1;93m[\e[92m4\e[93m]$(msg -verm2 "➛ ")$(msg -azu "V2RAY         ${inst[v2ray]}")  \e[1;93m[\e[92m18\e[93m]$(msg -verm2 "➛ ")$(msg -azu "DETALLES DE SISTEMA")"
+echo -e "\e[1;93m[\e[92m5\e[93m]$(msg -verm2 "➛ ")$(msg -azu "SSL           ${inst[stunnel4]}")  \e[1;93m[\e[92m19\e[93m]$(msg -verm2 "➛ ")$(msg -azu "TCP (BBR|BBR-Plus)")"
+echo -e "\e[1;93m[\e[92m6\e[93m]$(msg -verm2 "➛ ")$(msg -azu "DROPBEAR      ${inst[dropbear]}")  \e[1;93m[\e[92m20\e[93m]$(msg -verm2 "➛ ")$(msg -azu "DNS NETFLIX")"
+echo -e "\e[1;93m[\e[92m7\e[93m]$(msg -verm2 "➛ ")$(msg -azu "SQUID         ${inst[squid]}")  \e[1;93m[\e[92m21\e[93m]$(msg -verm2 "➛ ")$(msg -azu "AUTO MANTENIMIENTO")$autram"
+echo -e "\e[1;93m[\e[92m8\e[93m]$(msg -verm2 "➛ ")$(msg -azu "OPENVPN       ${inst[openvpn]}")  \e[1;93m[\e[92m22\e[93m]$(msg -verm2 "➛ ")$(msg -azu "SCANNER SUBDOMINIO")"
+echo -e "\e[1;93m[\e[92m9\e[93m]$(msg -verm2 "➛ ")$(msg -azu "SLOWDNS       ${inst[dns-serve]}")  \e[1;93m[\e[92m23\e[93m]$(msg -verm2 "➛ ")$(msg -azu "PRUEBA DE VELOCIDAD")"
+echo -e "\e[1;93m[\e[92m10\e[93m]$(msg -verm2 "➛ ")$(msg -azu "MONITOR APP  $app")  \e[1;93m[\e[92m24\e[93m]$(msg -verm2 "➛ ")$(msg -azu "FIX ORACLE/AWS/AZR")"
+echo -e "\e[1;93m[\e[92m11\e[93m]$(msg -verm2 "➛ ")$(msg -azu "BOT TELEGRAM $AD")  \e[1;93m[\e[92m25\e[93m]$(msg -verm2 "➛ ")$(msg -azu "\e[91m\e[43mHERRAMIENTAS BASICOS\e[0m")"
+echo -e "\e[1;93m[\e[92m12\e[93m]$(msg -verm2 "➛ ")$(msg -azu "WIREGUARD    ${inst[wg]}")  $(msg -verd "[0] ")$(msg -verm2 "➛ ")$(msg -azu "⇚ VOLVER  ")"
+echo -e "\e[1;93m[\e[92m13\e[93m]$(msg -verm2 "➛ ")$(msg -azu "NOTI-BOT     $noty")"
+echo -e "\e[1;93m[\e[92m14\e[93m]$(msg -verm2 "➛ ")$(msg -azu "CHECK-USER   $chek")"
+msg -bar
+echo -e "\e[1;93m[\e[1;92mA]\e[93m] \e[1;36mPROTOCOLOS EXTRAS (bot whats, cpanel etc) "
+msg -bar
+echo -ne " ►\e[1;37m Selecione Una Opcion: \e[33m " && read select
+case $select in
+0) ;;
+A) ${SCPinst}/extras.sh && read enter
+;;
+1) ${SCPinst}/budp.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+2) ${SCPinst}/shadowsocks.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+3) ${SCPinst}/sockspy.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+4) ${SCPinst}/v2ray.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+5) ${SCPinst}/ssl.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+6) ${SCPinst}/dropbear.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+7) ${SCPinst}/squid.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+8) ${SCPinst}/openvpn.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+9) ${SCPinst}/slowdns.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+#herramientas
+10) menuapp && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+11) adminbot;;
+12) ${SCPinst}/wireguard.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+13) noti ;;
+14) ${SCPinst}/chekuser.sh && msg -ne "Enter Para Continuar" && read enter
+menu3 ;;
+15) ${SCPfrm}/apacheon.sh;;
+16) ${SCPfrm}/blockBT.sh;;
+17) ${SCPfrm}/fai2ban.sh;;
+18) systen_info;;
+19) ${SCPfrm}/tcp.sh;;
+20) net;;
+21) cache;;
+22) ${SCPfrm}/ultrahost;;
+23) ${SCPfrm}/speed.py;;
+24)oracl ;;
+25) extra ;;
+#25)${SCPinst}/trojango.sh && msg -ne "Enter Para Continuar" && read enter
+#menu3 ;;
+*) msg -verm2 " Por Favor Selecione El Número Correcto"
+sleep 1.s
+menu3 ;;
+esac
+}
+men3() {
     declare -A inst
     pidr_inst
     clear
@@ -642,10 +856,6 @@ menu3() {
     echo -e "\e[1;90m[\e[92m8\e[90m]$(msg -verm2 "➛ ")$(msg -azu "OPENVPN       ${inst[openvpn]}")  \e[1;90m[\e[92m22\e[90m]$(msg -verm2 "➛ ")$(msg -azu "SCANNER SUBDOMINIO")"
     echo -e "\e[1;90m[\e[92m9\e[90m]$(msg -verm2 "➛ ")$(msg -azu "SLOWDNS            ${inst[dns - serve]}")  \e[1;90m[\e[92m23\e[90m]$(msg -verm2 "➛ ")$(msg -azu "PRUEBA DE VELOCIDAD")"
     echo -e "\e[1;90m[\e[92m10\e[90m]$(msg -verm2 "➛ ")$(msg -azu "BOT TELEGRAM $AD")  \e[1;90m[\e[92m24\e[90m]$(msg -verm2 "➛ ")$(msg -azu "FIX ORACLE/AWS/AZR")"
-    echo -e "\e[1;90m[\e[92m11\e[90m]$(msg -verm2 "➛ ")$(msg -azu "UDPserver           ")"
-    echo -e "\e[1;90m[\e[92m12\e[90m]$(msg -verm2 "➛ ")$(msg -azu "UDPcustom           ")"
-    echo -e "\e[1;90m[\e[92m13\e[90m]$(msg -verm2 "➛ ")$(msg -azu "WIREGUARD           ")"
-    echo -e "\e[1;90m[\e[92m14\e[90m]$(msg -verm2 "➛ ")$(msg -azu "PSIPHON           ")"
     echo -e "$(msg -verd "[0]")$(msg -verm2 "➛ ")$(msg -azu "⇚ VOLVER  ")           $(msg -verd "[25]")$(msg -verm2 "➛ ")$(msg -azu "\e[91m\e[43mHERRAMIENTAS BASICOS\e[0m")"
     msg -bar
     echo -ne " ►\e[1;37m Selecione Una Opcion: \e[33m " && read select
